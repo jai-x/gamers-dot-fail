@@ -1,0 +1,208 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require "date"
+require "erb"
+require "json"
+require "yaml"
+
+# Monkeypatch of Integer class to add #ordinalize method
+class Integer
+  def ordinalize
+    return "#{self}th" if digits.at(1) == 1
+
+    case digits.first
+    when 1
+      "#{self}st"
+    when 2
+      "#{self}nd"
+    when 3
+      "#{self}rd"
+    else
+      "#{self}th"
+    end
+  end
+end
+
+# Monkeypatch of Date class to add #ordinalize method
+class Date
+  def ordinalize
+    strftime("%A #{day.ordinalize} %B %Y")
+  end
+end
+
+# Module to render a page out to html given a template.
+# Requires class to have #filepath and #content
+module PageRenderable
+  def render(template)
+    File.open(filepath, "w") do |file|
+      file.write(template.result_with_hash(content: content))
+      puts "Generated: #{filepath}"
+    end
+  end
+end
+
+# Class to represent a sigle digest post for a article, with links to comments
+class GamerPost
+  include Comparable
+
+  def initialize(data)
+    @data = data
+
+    raise "Date is not valid #{@data[:date]}" unless @data[:date].is_a?(Date)
+  end
+
+  def date
+    data[:date]
+  end
+
+  def content
+    @content ||= <<~HTML
+      <p>
+        <span class="story-link"><a href="#{data[:link]}">#{data[:title]}</a></span>
+        <br>
+        <span class="story-date">#{data[:date].ordinalize}</span>
+        <span class="story-comments"><a href="#{data[:comments]}">(comments)</a></span>
+        <br>
+        #{data[:recap]}
+      </p>
+    HTML
+  end
+
+  def <=>(other)
+    date <=> other.date
+  end
+
+  private
+
+  attr_reader :data
+end
+
+# Class to represent a weekly digest containing all the posts for the week
+class GamerPage
+  include PageRenderable
+
+  def initialize(data)
+    @posts = data.map { |d| GamerPost.new(d) }.sort
+  end
+
+  def title
+    "gamers weekly (#{wc})"
+  end
+
+  def path
+    "/gamers/#{wc}"
+  end
+
+  def filepath
+    ".#{path}.html"
+  end
+
+  def content
+    @content ||= <<~HTML.strip
+      <h1>#{title}</h1>
+      <p>An annotated digest of the top /r/Games "news" posts for the week beginning #{wc.ordinalize}.</p>
+      #{@posts.map(&:content).join}
+    HTML
+  end
+
+  def wc
+    @wc ||= @posts.first.date
+  end
+
+  def <=>(other)
+    wc <=> other.wc
+  end
+end
+
+# Class to represent page containing links to all the weekly digests
+class GamerIndexPage
+  include PageRenderable
+
+  def initialize(gamer_pages)
+    @gamer_pages = gamer_pages
+  end
+
+  def filepath
+    "./gamers/index.html"
+  end
+
+  def content
+    @gamer_pages.map do |page|
+      <<~HTML
+        <h2 class="page-link"><a href="#{page.path}">#{page.title}</a><h2>
+      HTML
+    end.join.strip
+  end
+end
+
+# Class to represent page containing links to all the e3 digests
+class E3IndexPage
+  include PageRenderable
+
+  def filepath
+    "./e3/index.html"
+  end
+
+  def content
+    "<p>Nothing to see here... yet.</p>"
+  end
+end
+
+# Class to represent homepage
+class IndexPage
+  include PageRenderable
+
+  def initialize(content_pages)
+    @content_pages = content_pages
+  end
+
+  def filepath
+    "./index.html"
+  end
+
+  def content
+    @content_pages.take(3).map(&:content).join
+  end
+end
+
+# Class to represent about page
+class AboutPage
+  include PageRenderable
+
+  def filepath
+    "./about/index.html"
+  end
+
+  def content
+    File.open("./src/about.html").read
+  end
+end
+
+# Class to represent 404 page
+class NotFoundPage
+  include PageRenderable
+
+  def filepath
+    "./404.html"
+  end
+
+  def content
+    "<h1>404 - Page not found</h1>"
+  end
+end
+
+TEMPLATE = ERB.new(File.open("./src/template.html.erb").read)
+
+GAMER_PAGES = Dir["./src/gamers/*.yml"]
+              .map { |file| YAML.load_file(file, symbolize_names: true) }
+              .map { |data| GamerPage.new(data) }
+              .sort
+
+GAMER_PAGES.each { |page| page.render(TEMPLATE) }
+GamerIndexPage.new(GAMER_PAGES).render(TEMPLATE)
+E3IndexPage.new.render(TEMPLATE)
+IndexPage.new(GAMER_PAGES).render(TEMPLATE)
+AboutPage.new.render(TEMPLATE)
+NotFoundPage.new.render(TEMPLATE)

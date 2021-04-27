@@ -1,0 +1,65 @@
+:root {
+  --blurple: #7289DA;
+  --white: #FFFFFF;
+  --greyple: #99AAB5;
+  --dark: #2C2F33;
+  --almost-black: #23272A;
+  --black: #000000;
+}
+
+body {
+  /* If you don't want to use it, why is it on your computer? */
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "VGA";
+}
+
+header {
+  color: var(--greyple);
+}
+
+header a {
+  text-decoration: none;
+  color: inherit;
+}
+
+nav {
+  float: right;
+  margin: 8pt;
+}
+
+nav ul {
+  list-style: none outside;
+  padding-left: 1vw;
+}
+
+a {
+  color: var(--blurple);
+}
+
+.story-link {
+  font-size: 120%;
+}
+
+.story-date, .story-comments {
+  font-size: 75%;
+  opacity: 0.75;
+}
+
+@media only screen and (min-width: 800px) {
+  header, main, footer {
+    padding: 0 10vw;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--almost-black);
+    color: var(--white);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    background-color: var(--white);
+    color: var(--almost-black);
+  }
+}
