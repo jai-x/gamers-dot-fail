@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require "date"
+require "yaml"
+
+# Monkeypatch of Integer class to add #ordinalize method
+class Integer
+  def ordinalize
+    return "#{self}th" if digits.at(1) == 1
+
+    case digits.first
+    when 1
+      "#{self}st"
+    when 2
+      "#{self}nd"
+    when 3
+      "#{self}rd"
+    else
+      "#{self}th"
+    end
+  end
+end
+
+# Monkeypatch of Date class to add #ordinalize method
+class Date
+  def ordinalize
+    strftime("%A #{day.ordinalize} %B %Y")
+  end
+end
+
+LOREM = <<~TXT.gsub("\n", " ").strip
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
+  dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+  Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+  mollit anim id est laborum.
+TXT
+
+DIGEST = {
+  "date" => "",
+  "title" => "TBD",
+  "link" => "/404",
+  "comments" => "/404",
+  "recap" => LOREM
+}.freeze
+
+unless ARGV.length == 1
+  puts "Requires 1 argument: date of week commencing"
+  exit 1
+end
+
+WC = begin
+  Date.parse(ARGV.first)
+rescue Date::Error => _e
+  puts "Invalid date: #{ARGV.first}"
+  exit 1
+end
+
+SRC = (WC...WC + 7).map { |date| DIGEST.merge("date" => date) }.to_yaml
+SRC_NAME = "wc-#{WC}.yml"
+SRC_PATH = "./src/gamers/#{SRC_NAME}"
+
+puts "Week commencing: #{WC.ordinalize}"
+
+if File.file?(SRC_PATH)
+  puts "File already exists: #{SRC_PATH}"
+  exit 1
+end
+
+puts "Creating file: #{SRC_PATH}"
+File.open(SRC_PATH, "w") { |file| file.write(SRC) }

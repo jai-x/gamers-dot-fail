@@ -4,7 +4,6 @@
 
 require "date"
 require "erb"
-require "json"
 require "yaml"
 
 # Monkeypatch of Integer class to add #ordinalize method
@@ -121,7 +120,7 @@ class GamerIndexPage
   include PageRenderable
 
   def initialize(gamer_pages)
-    @gamer_pages = gamer_pages
+    @gamer_pages = gamer_pages.reverse
   end
 
   def filepath
@@ -155,7 +154,7 @@ class IndexPage
   include PageRenderable
 
   def initialize(content_pages)
-    @content_pages = content_pages
+    @content_pages = content_pages.reverse
   end
 
   def filepath
