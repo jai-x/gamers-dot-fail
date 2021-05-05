@@ -5,6 +5,15 @@
 require "date"
 require "yaml"
 
+def log(message, level=:info)
+  puts "[#{level.upcase}] #{message}"
+end
+
+def die(message)
+  log(message, :error)
+  exit 1
+end
+
 # Monkeypatch of Integer class to add #ordinalize method
 class Integer
   def ordinalize
@@ -47,28 +56,23 @@ DIGEST = {
   "recap" => LOREM
 }.freeze
 
-unless ARGV.length == 1
-  puts "Requires 1 argument: date of week commencing"
-  exit 1
-end
+die("Requires 1 argument of date of week commencing") unless ARGV.length == 1
 
 WC = begin
   Date.parse(ARGV.first)
 rescue Date::Error => _e
-  puts "Invalid date: #{ARGV.first}"
-  exit 1
+  die("Invalid date (#{ARGV.first})")
 end
+
+die("Week commencing date must be a Monday (#{WC.ordinalize})") unless WC.monday?
 
 SRC = (WC...WC + 7).map { |date| DIGEST.merge("date" => date) }.to_yaml
 SRC_NAME = "wc-#{WC}.yml"
 SRC_PATH = "./src/gamers/#{SRC_NAME}"
 
-puts "Week commencing: #{WC.ordinalize}"
+log("Week commencing: #{WC.ordinalize}")
 
-if File.file?(SRC_PATH)
-  puts "File already exists: #{SRC_PATH}"
-  exit 1
-end
+die("File already exists: #{SRC_PATH}") if File.file?(SRC_PATH)
 
-puts "Creating file: #{SRC_PATH}"
+log("Creating file: #{SRC_PATH}")
 File.open(SRC_PATH, "w") { |file| file.write(SRC) }
