@@ -99,7 +99,7 @@ class GamerPage
   end
 
   def content
-    @content ||= <<~HTML.strip
+    @content ||= <<~HTML
       <h1>#{title}</h1>
       <p>An annotated digest of the top /r/Games "news" posts for the week beginning #{wc.ordinalize}.</p>
       #{@posts.map(&:content).join}
