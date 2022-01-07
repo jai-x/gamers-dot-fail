@@ -5,31 +5,7 @@
 require "date"
 require "erb"
 require "yaml"
-
-# Monkeypatch of Integer class to add #ordinalize method
-class Integer
-  def ordinalize
-    return "#{self}th" if digits.at(1) == 1
-
-    case digits.first
-    when 1
-      "#{self}st"
-    when 2
-      "#{self}nd"
-    when 3
-      "#{self}rd"
-    else
-      "#{self}th"
-    end
-  end
-end
-
-# Monkeypatch of Date class to add #ordinalize method
-class Date
-  def ordinalize
-    strftime("%A #{day.ordinalize} %B %Y")
-  end
-end
+require_relative "./ordinalize"
 
 # Module to render a page out to html given a template.
 # Requires class to have #filepath and #content
@@ -175,7 +151,7 @@ class AboutPage
   end
 
   def content
-    File.open("./src/about.html").read
+    File.read("./src/about.html")
   end
 end
 
@@ -192,7 +168,7 @@ class NotFoundPage
   end
 end
 
-TEMPLATE = ERB.new(File.open("./src/template.html.erb").read)
+TEMPLATE = ERB.new(File.read("./src/template.html.erb"))
 
 GAMER_PAGES = Dir["./src/gamers/*.yml"]
               .map { |file| YAML.load_file(file, symbolize_names: true) }
